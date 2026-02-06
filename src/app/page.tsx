@@ -1,65 +1,95 @@
-import Image from "next/image";
+"use client";
+
+import { SyncStatus } from "@/components/sync-status";
+import { BookOpen, Trophy, Flame } from "lucide-react";
+import Link from 'next/link';
+import { useUser } from "@/hooks/useUser";
+import { BookCard } from "@/components/book-card";
 
 export default function Home() {
+  const { user } = useUser();
+  const points = user?.totalPoints || 0;
+  const BOOKS = [
+    { id: 1, title: "Environmental Science", grade: "Grade 10", pages: 45, pdfUrl: "/sample.pdf" },
+    { id: 2, title: "Advanced Biology", grade: "Grade 11", pages: 32, pdfUrl: "/science-book.pdf" },
+    { id: 3, title: "World History", grade: "Grade 10", pages: 28, pdfUrl: "/sample.pdf" },
+    { id: 4, title: "Mathematics", grade: "Grade 10", pages: 55, pdfUrl: "/sample.pdf" },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-gray-50 pb-20">
+      {/* Header / Gamification Bar */}
+      <header className="bg-white shadow-sm sticky top-0 z-10 px-4 py-4">
+        <div className="flex justify-between items-center max-w-md mx-auto">
+          <h1 className="text-xl font-bold text-green-700 flex items-center gap-2">
+            <BookOpen className="w-6 h-6" />
+            EcoLearn
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 text-orange-500 font-bold bg-orange-50 px-2 py-1 rounded-lg">
+              <Flame className="w-4 h-4 fill-orange-500" />
+              <span>12</span>
+            </div>
+            <div className="flex items-center gap-1 text-yellow-600 font-bold bg-yellow-50 px-2 py-1 rounded-lg">
+              <Trophy className="w-4 h-4 fill-yellow-500 text-yellow-600" />
+              <span>{points} pts</span>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      {/* Main Content */}
+      <div className="max-w-md mx-auto px-4 mt-6 space-y-6">
+
+        {/* Daily Goal Card */}
+        <section className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
+          <h2 className="text-lg font-semibold mb-1">Daily Goal</h2>
+          <p className="opacity-90 text-sm mb-4">Read for 30 minutes today</p>
+
+          <div className="w-full bg-white/20 rounded-full h-2 mb-2">
+            <div className="bg-white h-2 rounded-full w-[40%]"></div>
+          </div>
+          <p className="text-xs text-right opacity-80">12 / 30 mins</p>
+        </section>
+
+        {/* Library Grid */}
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-gray-800">Your Library</h2>
+            <button className="text-sm text-green-600 font-medium">See All</button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {BOOKS.map((book) => (
+              <BookCard
+                key={book.id}
+                id={book.id}
+                title={book.title}
+                grade={book.grade}
+                pages={book.pages}
+                pdfUrl={book.pdfUrl}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <SyncStatus />
+
+      {/* Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-3 px-6">
+        <div className="max-w-md mx-auto flex justify-around">
+          <button className="flex flex-col items-center text-green-600">
+            <BookOpen className="w-6 h-6" />
+            <span className="text-[10px] mt-1 font-medium">Library</span>
+          </button>
+          <Link href="/leaderboard" className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors">
+            <Trophy className="w-6 h-6" />
+            <span className="text-[10px] mt-1 font-medium">Rank</span>
+          </Link>
         </div>
-      </main>
-    </div>
+      </nav>
+    </main>
   );
 }
