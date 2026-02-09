@@ -6,32 +6,51 @@ type SyncPayload = {
     type: 'UPDATE_POINTS' | 'READ_LOG';
     payload: any;
     id?: number; // IndexedDB ID
+    userId?: string; // Injected by useSync
 };
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { type, payload } = body as SyncPayload;
+        const { type, payload, userId } = body as SyncPayload;
 
-        console.log(`[API] Received sync task: ${type}`, payload);
+        // Use the ID sent by client, or fallback (should not happen with updated useSync)
+        const targetUserId = userId || 'local-user';
+
+        console.log(`[API] Received sync task: ${type} for user: ${targetUserId}`, payload);
+
+        // Common Helper: Ensure User Exists
+        // We do this for both action types to ensure data integrity
+        const { data: userData } = await supabase
+            .from('users')
+            .select('total_points, name')
+            .eq('id', targetUserId)
+            .single();
+
+        let currentPoints = userData?.total_points || 0;
+
+        // If user doesn't exist remotely yet (e.g. first sync after signup), create them
+        // Note: Auth setup usually creates them, but 'local-user' needs explicit creation
+        if (!userData) {
+            const { error: createError } = await supabase.from('users').insert({
+                id: targetUserId,
+                name: 'Student', // Default
+                total_points: 0
+            });
+            if (createError) console.error("Error creating user stub:", createError);
+        }
 
         if (type === 'READ_LOG') {
-            // 1. Ensure User Exists (Update Total Points First)
-            const { data: userData } = await supabase
-                .from('users')
-                .select('total_points')
-                .eq('id', 'local-user')
-                .single();
-
-            const currentPoints = userData?.total_points || 0;
+            // Update Points
             const newTotal = currentPoints + payload.pointsEarned;
 
             const { error: userError } = await supabase
                 .from('users')
                 .upsert({
-                    id: 'local-user',
+                    id: targetUserId,
                     total_points: newTotal,
-                    name: 'Student' // Default name if creating new
+                    // Preserve existing name if possible, else default
+                    name: userData?.name || 'Student'
                 });
 
             if (userError) {
@@ -39,21 +58,36 @@ export async function POST(request: Request) {
                 return NextResponse.json({ error: userError.message }, { status: 500 });
             }
 
-            // 2. Insert Reading Session (Now safe because user exists)
+            // Insert Reading Session
             const { error: sessionError } = await supabase
                 .from('reading_sessions')
                 .insert({
-                    user_id: 'local-user',
+                    user_id: targetUserId, // Use the proper ID
                     book_id: payload.bookId,
                     duration: payload.duration,
                     points_earned: payload.pointsEarned,
-                    start_time: Date.now() - (payload.duration * 1000), // Approximate start time if not sent
+                    start_time: Date.now() - (payload.duration * 1000),
                     end_time: Date.now()
                 });
 
             if (sessionError) {
                 console.error('[API] Error saving session:', sessionError);
                 return NextResponse.json({ error: sessionError.message }, { status: 500 });
+            }
+
+        } else if (type === 'UPDATE_POINTS') {
+            // Merging local points to cloud
+            const pointsToAdd = payload.pointsEarned;
+            const newTotal = currentPoints + pointsToAdd;
+
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ total_points: newTotal })
+                .eq('id', targetUserId);
+
+            if (updateError) {
+                console.error('[API] Error merging points:', updateError);
+                return NextResponse.json({ error: updateError.message }, { status: 500 });
             }
         }
 
