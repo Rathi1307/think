@@ -11,6 +11,7 @@ export function useUser() {
         const initUser = async () => {
             const count = await db.users.count();
             if (count === 0) {
+                console.log("[User] Creating default local user");
                 await db.users.add({
                     id: 'local-user', // This would be replaced by server ID after sync
                     name: 'Student',

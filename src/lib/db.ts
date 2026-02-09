@@ -28,7 +28,7 @@ const db = new Dexie('AdaptivePlatformDB') as Dexie & {
 };
 
 // Schema definition
-db.version(1).stores({
+db.version(2).stores({
     users: 'id, name, totalPoints',
     readings: '++id, bookId, synced, startTime',
     syncQueue: '++id, type, createdAt'

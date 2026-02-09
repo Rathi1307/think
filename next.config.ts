@@ -9,8 +9,8 @@ const nextConfig = withPWA({
   dest: "public",
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: false, // Enable PWA in dev for testing
+  reloadOnOnline: false,
+  disable: true, // Enable PWA in dev for testing
   workboxOptions: {
     disableDevLogs: true,
   },
