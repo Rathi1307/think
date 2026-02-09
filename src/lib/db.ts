@@ -14,6 +14,18 @@ interface ReadingSession {
     synced: 0 | 1; // 0 = false, 1 = true
 }
 
+interface Book {
+    id?: number;
+    title: string;
+    grade: string;
+    pages: number;
+    pdfUrl: string;
+    level: string;
+    subject: string;
+    language: string;
+    coverUrl?: string;
+}
+
 interface SyncTask {
     id?: number;
     type: 'UPDATE_POINTS' | 'READ_LOG';
@@ -25,14 +37,16 @@ const db = new Dexie('AdaptivePlatformDB') as Dexie & {
     users: EntityTable<User, 'id'>;
     readings: EntityTable<ReadingSession, 'id'>;
     syncQueue: EntityTable<SyncTask, 'id'>;
+    books: EntityTable<Book, 'id'>;
 };
 
 // Schema definition
-db.version(2).stores({
+db.version(3).stores({
     users: 'id, name, totalPoints',
     readings: '++id, bookId, synced, startTime',
-    syncQueue: '++id, type, createdAt'
+    syncQueue: '++id, type, createdAt',
+    books: '++id, title, grade, level, subject, language'
 });
 
 export { db };
-export type { User, ReadingSession, SyncTask };
+export type { User, ReadingSession, SyncTask, Book };

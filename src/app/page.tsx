@@ -1,25 +1,48 @@
 "use client";
 
+import { useState } from "react";
+import { Dropdown } from "@/components/dropdown";
+
 import { SyncStatus } from "@/components/sync-status";
-import { BookOpen, Trophy, Flame, Wifi, WifiOff, Laptop, Smartphone } from "lucide-react";
+import { BookOpen, Trophy, Flame, Wifi, WifiOff, Laptop, Smartphone, LayoutDashboard } from "lucide-react";
 import Link from 'next/link';
 import { useUser } from "@/hooks/useUser";
 import { BookCard } from "@/components/book-card";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useDeviceType } from "@/hooks/useDeviceType";
 
+import { useBooks } from "@/hooks/useBooks";
+
 export default function Home() {
   const { user } = useUser();
   const isOnline = useNetworkStatus();
   const { isMobile } = useDeviceType();
+  const { books } = useBooks();
+
+  const [selectedLevel, setSelectedLevel] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
 
   const points = user?.totalPoints || 0;
-  const BOOKS = [
-    { id: 1, title: "Environmental Science", grade: "Grade 10", pages: 45, pdfUrl: "/sample.pdf" },
-    { id: 2, title: "Advanced Biology", grade: "Grade 11", pages: 32, pdfUrl: "/science-book.pdf" },
-    { id: 3, title: "World History", grade: "Grade 10", pages: 28, pdfUrl: "/sample.pdf" },
-    { id: 4, title: "Mathematics", grade: "Grade 10", pages: 55, pdfUrl: "/sample.pdf" },
+
+
+  const levels = [
+    { value: "1", label: "Level 1" },
+    { value: "2", label: "Level 2" },
+    { value: "3", label: "Level 3" },
+    { value: "4", label: "Level 4" },
   ];
+
+  const subjects = [
+    { value: "Science", label: "Science" },
+    { value: "Mathematics", label: "Mathematics" },
+    { value: "History", label: "History" },
+  ];
+
+  const filteredBooks = books?.filter((book) => {
+    const levelMatch = selectedLevel ? book.level === selectedLevel : true;
+    const subjectMatch = selectedSubject ? book.subject === selectedSubject : true;
+    return levelMatch && subjectMatch;
+  });
 
   return (
     <main className={`min-h-screen pb-20 transition-colors duration-500 ${isOnline ? 'bg-gray-50' : 'bg-stone-100'}`}>
@@ -32,6 +55,7 @@ export default function Home() {
           </h1>
 
           <div className="flex items-center gap-3">
+
             {/* Status Indicators for Demo */}
             <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs font-mono text-gray-500">
               {isMobile ? <Smartphone className="w-3 h-3" /> : <Laptop className="w-3 h-3" />}
@@ -91,14 +115,29 @@ export default function Home() {
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold text-gray-800">Your Library</h2>
-            <button className={`text-sm font-medium ${isOnline ? 'text-green-600' : 'text-stone-500'}`}>See All</button>
+            <div className="flex gap-2">
+              <Dropdown
+                label="Level"
+                options={levels}
+                value={selectedLevel}
+                onChange={setSelectedLevel}
+                className="hidden md:block"
+              />
+              <Dropdown
+                label="Subject"
+                options={subjects}
+                value={selectedSubject}
+                onChange={setSelectedSubject}
+                className="hidden md:block"
+              />
+            </div>
           </div>
 
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
-            {BOOKS.map((book) => (
+            {filteredBooks?.map((book) => (
               <BookCard
                 key={book.id}
-                id={book.id}
+                id={book.id!}
                 title={book.title}
                 grade={book.grade}
                 pages={book.pages}
@@ -121,6 +160,10 @@ export default function Home() {
           <Link href="/leaderboard" className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors">
             <Trophy className="w-6 h-6" />
             <span className="text-[10px] mt-1 font-medium">Rank</span>
+          </Link>
+          <Link href="/admin" className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors">
+            <LayoutDashboard className="w-6 h-6" />
+            <span className="text-[10px] mt-1 font-medium">Admin</span>
           </Link>
         </div>
       </nav>
