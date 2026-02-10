@@ -14,7 +14,7 @@ export async function fetchDriveFolder(folderId: string): Promise<DriveFile[]> {
     }
 
     const url = new URL("https://www.googleapis.com/drive/v3/files");
-    url.searchParams.append("q", `'${folderId}' in parents and mimeType = 'application/pdf' and trashed = false`);
+    url.searchParams.append("q", `'${folderId}' in parents and (mimeType = 'application/pdf' or mimeType contains 'image/') and trashed = false`);
     url.searchParams.append("fields", "files(id, name, mimeType, webViewLink, webContentLink)");
     url.searchParams.append("pageSize", "1000"); // Maximum allowed per page
     url.searchParams.append("key", API_KEY);

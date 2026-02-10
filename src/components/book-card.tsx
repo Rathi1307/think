@@ -10,9 +10,11 @@ interface BookCardProps {
     grade: string;
     pages: number;
     pdfUrl: string;
+    coverUrl?: string;
 }
 
-export function BookCard({ id, title, grade, pages, pdfUrl }: BookCardProps) {
+export function BookCard({ id, title, grade, pages, pdfUrl, coverUrl }: BookCardProps) {
+
     const [downloading, setDownloading] = useState(false);
     const [isOfflineReady, setIsOfflineReady] = useState(false);
 
@@ -55,10 +57,22 @@ export function BookCard({ id, title, grade, pages, pdfUrl }: BookCardProps) {
         <Link href={`/read/${id}`} className="block text-left group/card relative">
             <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 active:scale-95 transition-transform h-full">
                 <div className="aspect-[3/4] bg-gray-100 rounded-lg mb-3 relative overflow-hidden">
-                    {/* Placeholder Cover */}
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-300">
-                        <BookOpen className="w-8 h-8" />
-                    </div>
+                    {/* Cover Image or Placeholder */}
+                    {coverUrl ? (
+                        <img
+                            src={coverUrl}
+                            alt={title}
+                            className="absolute inset-0 w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                        />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-300">
+                            <BookOpen className="w-8 h-8" />
+                        </div>
+                    )}
+
 
                     {/* Download Overlay Button */}
                     <button

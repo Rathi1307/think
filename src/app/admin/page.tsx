@@ -132,16 +132,30 @@ export default function AdminDashboard() {
         if (scanResults.length === 0) return;
         setImporting(true);
         try {
-            const formattedBooks: Book[] = scanResults.map(file => ({
-                title: file.name.replace(/\.pdf$/i, ""),
-                grade: newBook.grade || "Grade 10",
-                pages: 10, // Default placeholder
-                pdfUrl: getDirectDownloadUrl(file.id),
-                level: newBook.level || "1",
-                subject: newBook.subject || "Science",
-                language: newBook.language || "English"
-            }));
+            const pdfs = scanResults.filter(f => f.mimeType.includes('pdf'));
+            const images = scanResults.filter(f => f.mimeType.includes('image'));
+
+            const formattedBooks: Book[] = pdfs.map(pdfFile => {
+                const baseName = pdfFile.name.replace(/\.pdf$/i, "").trim().toLowerCase();
+                // Find matching image
+                const matchingImage = images.find(img =>
+                    img.name.split('.')[0].trim().toLowerCase() === baseName
+                );
+
+                return {
+                    title: pdfFile.name.replace(/\.pdf$/i, ""),
+                    grade: newBook.grade || "Grade 10",
+                    pages: 10,
+                    pdfUrl: getDirectDownloadUrl(pdfFile.id),
+                    level: newBook.level || "1",
+                    subject: newBook.subject || "Science",
+                    language: newBook.language || "English",
+                    coverUrl: matchingImage ? getDirectDownloadUrl(matchingImage.id) : undefined
+                };
+            });
+
             await addBooks(formattedBooks);
+
             setScanResults([]);
             setFolderId("");
             alert(`Successfully imported ${formattedBooks.length} books!`);
@@ -414,6 +428,77 @@ export default function AdminDashboard() {
                     </div>
                 </div>
             </section>
+
+            {/* Google Drive Batch Import */}
+            <section className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                        <Cloud className="w-5 h-5 text-blue-500" />
+                        Google Drive Batch Import
+                    </h3>
+                    <p className="text-xs text-gray-400">Import PDFs and matching cover images automatically</p>
+                </div>
+                <div className="p-6 space-y-6">
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            placeholder="Paste Google Drive Folder ID or Link"
+                            className="flex-1 p-2 border rounded"
+                            value={folderId}
+                            onChange={(e) => setFolderId(e.target.value)}
+                        />
+                        <button
+                            onClick={handleScan}
+                            disabled={scanning || !folderId}
+                            className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                            Scan Folder
+                        </button>
+                    </div>
+
+                    {scanResults.length > 0 && (
+                        <div className="space-y-4">
+                            <div className="max-h-60 overflow-y-auto border rounded-lg bg-gray-50">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-100 sticky top-0">
+                                        <tr>
+                                            <th className="p-2">File Name</th>
+                                            <th className="p-2 text-right">Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {scanResults.map((file) => (
+                                            <tr key={file.id}>
+                                                <td className="p-2">{file.name}</td>
+                                                <td className="p-2 text-right text-gray-400">
+                                                    {file.mimeType.includes('pdf') ? 'PDF' : 'Cover Image'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                <div className="text-sm text-blue-700">
+                                    Found <strong>{scanResults.filter(f => f.mimeType.includes('pdf')).length}</strong> PDFs
+                                    and <strong>{scanResults.filter(f => f.mimeType.includes('image')).length}</strong> images.
+                                </div>
+                                <button
+                                    onClick={handleImportAll}
+                                    disabled={importing}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-sm"
+                                >
+                                    {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                    Import All
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </section>
+
         </div>
     );
 }
