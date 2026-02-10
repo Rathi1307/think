@@ -29,9 +29,14 @@ export function useBooks() {
         await db.books.add(book);
     };
 
+    const addBooks = async (newBooks: Book[]) => {
+        await db.books.bulkAdd(newBooks);
+    };
+
     const removeBook = async (id: number) => {
         await db.books.delete(id);
     };
 
-    return { books, addBook, removeBook };
+    return { books, addBook, addBooks, removeBook };
 }
+
