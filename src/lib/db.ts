@@ -3,6 +3,10 @@ import Dexie, { type EntityTable } from 'dexie';
 interface User {
     id: string; // Remote ID
     name: string;
+    age?: number;
+    city?: string;
+    school?: string;
+    password?: string; // Simple local password for demo
     totalPoints: number;
 }
 
@@ -41,7 +45,7 @@ const db = new Dexie('AdaptivePlatformDB') as Dexie & {
 };
 
 // Schema definition
-db.version(3).stores({
+db.version(5).stores({
     users: 'id, name, totalPoints',
     readings: '++id, bookId, synced, startTime',
     syncQueue: '++id, type, createdAt',

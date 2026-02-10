@@ -9,6 +9,8 @@ export function useUser() {
 
     // Listen for Supabase Auth Changes
     useEffect(() => {
+        if (!supabase) return;
+
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session?.user) {
                 console.log("[Auth] User Signed In:", session.user.id);

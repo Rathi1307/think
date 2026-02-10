@@ -1,8 +1,9 @@
 "use client";
 
 import { useBooks } from "@/hooks/useBooks";
-import { Book } from "@/lib/db";
+import { Book, db, User } from "@/lib/db";
 import { useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Trash2, Plus, BookOpen, GraduationCap, MapPin, Search, Cloud, Download, Loader2 } from "lucide-react";
 import { Dropdown } from "@/components/dropdown";
@@ -79,16 +80,7 @@ export default function AdminDashboard() {
         setSelectedSchool("");
     };
 
-    // Mock Student Data
-    const STUDENT_DATA = [
-        { id: 1, name: "Aarav Patel", age: 15, school: "School A", booksRead: 12 },
-        { id: 2, name: "Diya Sharma", age: 14, school: "School A", booksRead: 8 },
-        { id: 3, name: "Vivaan Singh", age: 15, school: "School B", booksRead: 15 },
-        { id: 4, name: "Ananya Gupta", age: 16, school: "School F", booksRead: 20 },
-        { id: 5, name: "Rohan Kumar", age: 14, school: "School A", booksRead: 5 },
-    ];
 
-    const filteredStudents = selectedSchool ? STUDENT_DATA.filter(s => s.school === selectedSchool) : [];
 
     const handleAddBook = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -167,6 +159,19 @@ export default function AdminDashboard() {
         { name: 'District 3', activeStudent: 1450 },
     ]
 
+    // Real Student Data from Dexie
+    const users = useLiveQuery(() => db.users.toArray()) || [];
+
+    // Filter logic
+    const filteredStudents = users.filter((user: User) => {
+        const matchesSchool = selectedSchool ? user.school === selectedSchool : true;
+        const matchesCity = selectedCity ? user.city === selectedCity : true;
+        // Add other filters as needed
+        return matchesSchool && matchesCity;
+    });
+
+    // ... (keep handleAddBook and other functions)
+
     return (
         <div className="space-y-8">
             <header>
@@ -177,13 +182,14 @@ export default function AdminDashboard() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard icon={<BookOpen className="text-blue-500" />} label="Total Books" value={books?.length || 0} />
-                <StatCard icon={<GraduationCap className="text-green-500" />} label="Active Students" value="3,450" />
-                <StatCard icon={<MapPin className="text-orange-500" />} label="Schools Reached" value="128" />
-                <StatCard icon={<MapPin className="text-purple-500" />} label="Districts" value="12" />
+                <StatCard icon={<GraduationCap className="text-green-500" />} label="Active Students" value={users.length} />
+                <StatCard icon={<MapPin className="text-orange-500" />} label="Schools Reached" value={selectedSchool ? 1 : "All"} />
+                <StatCard icon={<MapPin className="text-purple-500" />} label="Cities" value={selectedCity ? 1 : "All"} />
             </div>
 
-            {/* Charts Section */}
+            {/* Charts Section - Keep usage of mock data for charts for now as we don't have enough real data points yet */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* ... charts ... */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h3 className="font-semibold mb-6">Books Read by School</h3>
                     <div className="h-64">
@@ -220,7 +226,7 @@ export default function AdminDashboard() {
                 <div className="p-6 border-b border-gray-100">
                     <h3 className="text-lg font-bold flex items-center gap-2">
                         <Search className="w-5 h-5 text-gray-500" />
-                        Student Reports
+                        Student Reports (Real Data)
                     </h3>
                 </div>
                 <div className="p-6 space-y-6">
@@ -257,42 +263,39 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Student Data Table */}
-                    {selectedSchool && (
-                        <div className="rounded-lg border border-gray-200 overflow-hidden">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
-                                    <tr>
-                                        <th className="p-4">Student Name</th>
-                                        <th className="p-4">Age</th>
-                                        <th className="p-4">School</th>
-                                        <th className="p-4 text-right">Books Read</th>
+                    <div className="rounded-lg border border-gray-200 overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
+                                <tr>
+                                    <th className="p-4">Student Name</th>
+                                    <th className="p-4">Age</th>
+                                    <th className="p-4">School</th>
+                                    <th className="p-4">City</th>
+                                    <th className="p-4">Mobile</th>
+                                    <th className="p-4 text-right">Points</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {filteredStudents.map((student: User) => (
+                                    <tr key={student.id} className="hover:bg-gray-50">
+                                        <td className="p-4 font-medium text-gray-900">{student.name}</td>
+                                        <td className="p-4 text-gray-500">{student.age}</td>
+                                        <td className="p-4 text-gray-500">{student.school}</td>
+                                        <td className="p-4 text-gray-500">{student.city}</td>
+                                        <td className="p-4 text-gray-500">{student.mobile || '-'}</td>
+                                        <td className="p-4 text-right font-bold text-green-600 px-2 py-1 rounded bg-green-50 inline-block mt-2">{student.totalPoints}</td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {filteredStudents.map((student) => (
-                                        <tr key={student.id} className="hover:bg-gray-50">
-                                            <td className="p-4 font-medium text-gray-900">{student.name}</td>
-                                            <td className="p-4 text-gray-500">{student.age}</td>
-                                            <td className="p-4 text-gray-500">{student.school}</td>
-                                            <td className="p-4 text-right font-bold text-blue-600">{student.booksRead}</td>
-                                        </tr>
-                                    ))}
-                                    {filteredStudents.length === 0 && (
-                                        <tr>
-                                            <td colSpan={4} className="p-8 text-center text-gray-500">
-                                                No students found for this school.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                    {!selectedSchool && (
-                        <div className="text-center py-12 bg-gray-50 rounded-lg text-gray-500 border border-dashed border-gray-300">
-                            Please select a school to view student data.
-                        </div>
-                    )}
+                                ))}
+                                {filteredStudents.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="p-8 text-center text-gray-500">
+                                            No students found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 

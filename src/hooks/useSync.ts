@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { supabase } from '@/lib/supabase';
 
 export function useSync() {
     const [isOnline, setIsOnline] = useState(true);
@@ -39,18 +40,24 @@ export function useSync() {
             for (const task of pendingTasks) {
                 console.log(`[Sync] Processing task ${task.id}`, task);
                 try {
-                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/sync';
+                    if (!supabase) throw new Error("Supabase client not initialized");
 
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(task)
-                    });
+                    if (task.type === 'READ_LOG') {
+                        const { error } = await supabase
+                            .from('readings')
+                            .insert([task.payload]);
 
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error(`[Sync] Server error: ${response.status}`, errorText);
-                        throw new Error(`Sync failed with status: ${response.status}`);
+                        if (error) throw error;
+                    }
+                    else if (task.type === 'UPDATE_POINTS') {
+                        // Payload should contain { userId, points }
+                        const { userId, totalPoints } = task.payload;
+                        const { error } = await supabase
+                            .from('users')
+                            .update({ totalPoints })
+                            .eq('id', userId);
+
+                        if (error) throw error;
                     }
 
                     // Remove from queue on success
