@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Dropdown } from "@/components/dropdown";
 
 import { SyncStatus } from "@/components/sync-status";
-import { BookOpen, Trophy, Flame, Wifi, WifiOff, Laptop, Smartphone, LayoutDashboard, LogIn, LogOut } from "lucide-react";
+import { BookOpen, Trophy, Flame, Wifi, WifiOff, Laptop, Smartphone, LayoutDashboard, LogIn, LogOut, Search } from "lucide-react";
+
 
 import Link from 'next/link';
 import { useUser } from "@/hooks/useUser";
@@ -23,6 +24,9 @@ export default function Home() {
 
   const [selectedLevel, setSelectedLevel] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(12); // Pagination
+
 
   const points = user?.totalPoints || 0;
 
@@ -43,8 +47,13 @@ export default function Home() {
   const filteredBooks = books?.filter((book) => {
     const levelMatch = selectedLevel ? book.level === selectedLevel : true;
     const subjectMatch = selectedSubject ? book.subject === selectedSubject : true;
-    return levelMatch && subjectMatch;
+    const searchMatch = searchQuery ? book.title.toLowerCase().includes(searchQuery.toLowerCase()) : true;
+    return levelMatch && subjectMatch && searchMatch;
   });
+
+  const paginatedBooks = filteredBooks?.slice(0, visibleCount);
+  const hasMore = filteredBooks && visibleCount < filteredBooks.length;
+
 
   return (
     <main className={`min-h-screen pb-20 transition-colors duration-500 ${isOnline ? 'bg-gray-50' : 'bg-stone-100'}`}>
@@ -138,28 +147,42 @@ export default function Home() {
 
         {/* Library Grid */}
         <section>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-800">Your Library</h2>
-            <div className="flex gap-2">
-              <Dropdown
-                label="Level"
-                options={levels}
-                value={selectedLevel}
-                onChange={setSelectedLevel}
-                className="hidden md:block"
-              />
-              <Dropdown
-                label="Subject"
-                options={subjects}
-                value={selectedSubject}
-                onChange={setSelectedSubject}
-                className="hidden md:block"
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-800">Your Library</h2>
+              <div className="flex gap-2">
+                <Dropdown
+                  label="Level"
+                  options={levels}
+                  value={selectedLevel}
+                  onChange={setSelectedLevel}
+                  className="hidden md:block"
+                />
+                <Dropdown
+                  label="Subject"
+                  options={subjects}
+                  value={selectedSubject}
+                  onChange={setSelectedSubject}
+                  className="hidden md:block"
+                />
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search for books by title..."
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-100 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
 
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
-            {filteredBooks?.map((book) => (
+            {paginatedBooks?.map((book) => (
               <BookCard
                 key={book.id}
                 id={book.id!}
@@ -170,7 +193,20 @@ export default function Home() {
               />
             ))}
           </div>
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => setVisibleCount(prev => prev + 12)}
+                className="bg-white text-gray-700 px-6 py-2 rounded-full shadow-sm border border-gray-100 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+              >
+                Load More Books
+              </button>
+            </div>
+          )}
         </section>
+
       </div>
 
       <SyncStatus />
