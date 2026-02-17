@@ -1,10 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { BookOpen, UserCircle, LogIn, ArrowRight, Sparkles, BookHeart, GraduationCap } from "lucide-react";
 import { BookCard } from "@/components/book-card";
 
 export default function LandingPage() {
+  // TODO: Implement actual data fetching and responsive logic
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [paginatedBooks, setPaginatedBooks] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const isMobile = false;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex flex-col font-sans">
 
@@ -134,27 +141,28 @@ export default function LandingPage() {
                       </button>
 
                     </div>
-
-          </div>
-              </section>
-            </main>
-
-            {/* Footer */}
-            <footer className="bg-white py-12 border-t border-green-100 mt-auto">
-              <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-                <p className="text-sm text-slate-400 font-medium">
-                  &copy; 2024 ThinkSharp Foundation. All rights reserved.
-                </p>
-
-                <div className="flex items-center gap-6">
-                  <Link href="/admin" className="text-xs text-slate-400 hover:text-green-600 transition-colors flex items-center gap-1 group font-medium">
-                    <LogIn className="w-3 h-3 group-hover:text-green-600" />
-                    Admin Access
-                  </Link>
+                  )}
                 </div>
               </div>
-            </footer>
-
+            </div>
           </div>
-          );
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white py-12 border-t border-green-100 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-sm text-slate-400 font-medium">
+            &copy; 2024 ThinkSharp Foundation. All rights reserved.
+          </p>
+          <div className="flex items-center gap-6">
+            <Link href="/admin" className="text-xs text-slate-400 hover:text-green-600 transition-colors flex items-center gap-1 group font-medium">
+              <LogIn className="w-3 h-3 group-hover:text-green-600" />
+              Admin Access
+            </Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }

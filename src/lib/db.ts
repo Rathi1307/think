@@ -3,6 +3,7 @@ import Dexie, { type EntityTable } from 'dexie';
 interface User {
     id: string; // Remote ID
     name: string;
+    mobile: string; // Added for local auth
     age?: number;
     city?: string;
     school?: string;
@@ -45,11 +46,25 @@ const db = new Dexie('AdaptivePlatformDB') as Dexie & {
 };
 
 // Schema definition
-db.version(5).stores({
-    users: 'id, name, totalPoints',
+db.version(6).stores({ // Incremented version to apply changes
+    users: 'id, name, mobile, totalPoints', // Added mobile to index
     readings: '++id, bookId, synced, startTime',
     syncQueue: '++id, type, createdAt',
     books: '++id, title, grade, level, subject, language'
+});
+
+// Seed default user
+db.on('populate', async () => {
+    await db.users.add({
+        id: 'local-admin',
+        name: 'Test Student',
+        mobile: '1234567890',
+        password: 'admin',
+        totalPoints: 0,
+        school: 'ThinkSharp School',
+        city: 'Mumbai',
+        age: 12
+    });
 });
 
 export { db };
