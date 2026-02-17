@@ -19,7 +19,8 @@ export default function AdminDashboard() {
         pdfUrl: "/sample.pdf",
         level: "1",
         subject: "Science",
-        language: "English"
+        language: "English",
+        coverUrl: ""
     });
 
     // Google Drive Import State
@@ -100,7 +101,8 @@ export default function AdminDashboard() {
                 pdfUrl: newBook.pdfUrl || "/sample.pdf",
                 level: newBook.level || "1",
                 subject: newBook.subject || "Science",
-                language: newBook.language || "English"
+                language: newBook.language || "English",
+                coverUrl: newBook.coverUrl || ""
             } as Book);
             setNewBook({
                 title: "",
@@ -109,7 +111,8 @@ export default function AdminDashboard() {
                 pdfUrl: "/sample.pdf",
                 level: "1",
                 subject: "Science",
-                language: "English"
+                language: "English",
+                coverUrl: ""
             });
         }
     };
@@ -314,6 +317,13 @@ export default function AdminDashboard() {
                                 value={newBook.title}
                                 onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
                                 required
+                            />
+                            <input
+                                type="text"
+                                placeholder="Cover Page Google Drive Link (Optional)"
+                                className="w-full p-2 border rounded"
+                                value={newBook.coverUrl || ''}
+                                onChange={(e) => setNewBook({ ...newBook, coverUrl: e.target.value })}
                             />
                             <div className="grid grid-cols-2 gap-2">
                                 <select

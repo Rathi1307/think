@@ -190,6 +190,7 @@ export default function Home() {
                 grade={book.grade}
                 pages={book.pages}
                 pdfUrl={book.pdfUrl}
+                coverUrl={book.coverUrl}
               />
             ))}
           </div>
