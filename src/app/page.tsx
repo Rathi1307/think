@@ -1,235 +1,143 @@
 "use client";
 
-import { useState } from "react";
-import { Dropdown } from "@/components/dropdown";
+import Link from "next/link";
+import { BookOpen, UserCircle, LogIn, ArrowRight, Sparkles, BookHeart, GraduationCap } from "lucide-react";
 
-import { SyncStatus } from "@/components/sync-status";
-import { BookOpen, Trophy, Flame, Wifi, WifiOff, Laptop, Smartphone, LayoutDashboard, LogIn, LogOut, Search } from "lucide-react";
-
-
-import Link from 'next/link';
-import { useUser } from "@/hooks/useUser";
-import { supabase } from "@/lib/supabase";
-import { BookCard } from "@/components/book-card";
-import { useNetworkStatus } from "@/hooks/useNetworkStatus";
-import { useDeviceType } from "@/hooks/useDeviceType";
-
-import { useBooks } from "@/hooks/useBooks";
-
-export default function Home() {
-  const { user } = useUser();
-  const isOnline = useNetworkStatus();
-  const { isMobile } = useDeviceType();
-  const { books } = useBooks();
-
-  const [selectedLevel, setSelectedLevel] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(12); // Pagination
-
-
-  const points = user?.totalPoints || 0;
-
-
-  const levels = [
-    { value: "1", label: "Level 1" },
-    { value: "2", label: "Level 2" },
-    { value: "3", label: "Level 3" },
-    { value: "4", label: "Level 4" },
-  ];
-
-  const subjects = [
-    { value: "Science", label: "Science" },
-    { value: "Mathematics", label: "Mathematics" },
-    { value: "History", label: "History" },
-  ];
-
-  const filteredBooks = books?.filter((book) => {
-    const levelMatch = selectedLevel ? book.level === selectedLevel : true;
-    const subjectMatch = selectedSubject ? book.subject === selectedSubject : true;
-    const searchMatch = searchQuery ? book.title.toLowerCase().includes(searchQuery.toLowerCase()) : true;
-    return levelMatch && subjectMatch && searchMatch;
-  });
-
-  const paginatedBooks = filteredBooks?.slice(0, visibleCount);
-  const hasMore = filteredBooks && visibleCount < filteredBooks.length;
-
-
+export default function LandingPage() {
   return (
-    <main className={`min-h-screen pb-20 transition-colors duration-500 ${isOnline ? 'bg-gray-50' : 'bg-stone-100'}`}>
-      {/* Header / Gamification Bar */}
-      <header className={`sticky top-0 z-10 px-4 py-4 shadow-sm transition-colors duration-300 ${isOnline ? 'bg-white' : 'bg-stone-200'}`}>
-        <div className={`flex justify-between items-center mx-auto ${isMobile ? 'max-w-md' : 'max-w-4xl'}`}>
-          <h1 className={`text-xl font-bold flex items-center gap-2 ${isOnline ? 'text-green-700' : 'text-stone-700'}`}>
-            <BookOpen className="w-6 h-6" />
-            EcoLearn
-          </h1>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 flex flex-col font-sans">
 
-          <div className="flex items-center gap-3">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-green-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
 
-            {/* Status Indicators for Demo */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs font-mono text-gray-500">
-              {isMobile ? <Smartphone className="w-3 h-3" /> : <Laptop className="w-3 h-3" />}
-              <span>{isMobile ? "Mobile" : "Desktop"}</span>
-              <span className="w-px h-3 bg-gray-300 mx-1" />
-              {isOnline ? <Wifi className="w-3 h-3 text-green-500" /> : <WifiOff className="w-3 h-3 text-red-500" />}
-              <span>{isOnline ? "Online" : "Offline"}</span>
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-tr from-green-500 to-emerald-600 p-2 rounded-lg text-white shadow-md shadow-green-200">
+              <BookOpen className="w-6 h-6" />
             </div>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-800 to-emerald-700">
+              ThinkSharp
+            </span>
+          </div>
 
-            <div className="flex items-center gap-1 text-orange-500 font-bold bg-orange-50 px-2 py-1 rounded-lg">
-              <Flame className="w-4 h-4 fill-orange-500" />
-              <span>12</span>
-            </div>
-
-            <div className="flex items-center gap-1 text-yellow-600 font-bold bg-yellow-50 px-2 py-1 rounded-lg">
-              <Trophy className="w-4 h-4 fill-yellow-500 text-yellow-600" />
-              <span>{points} pts</span>
-            </div>
-
-            {/* Auth Button */}
-            {user?.id !== 'local-user' ? (
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  window.location.reload();
-                }}
-                className="flex items-center gap-1 text-gray-600 hover:text-red-600 transition-colors bg-gray-50 hover:bg-red-50 px-2 py-1 rounded-lg"
-                title="Sign Out"
+          {/* Nav Links - Right Aligned */}
+          <nav className="flex items-center gap-2 md:gap-6">
+            <Link href="https://www.thinksharpfoundation.org/about-us.php" target="_blank" className="hidden md:block text-sm font-medium text-slate-600 hover:text-green-600 transition-colors">
+              About ThinkSharp
+            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/signup"
+                className="px-4 py-2 text-sm font-bold text-slate-700 hover:bg-green-50 hover:text-green-700 rounded-full transition-colors"
               >
-                <LogOut className="w-4 h-4" />
-              </button>
-            ) : (
+                Sign In
+              </Link>
               <Link
                 href="/login"
-                className="flex items-center gap-1 text-green-700 font-bold bg-green-100 hover:bg-green-200 px-3 py-1 rounded-lg transition-colors"
+                className="px-5 py-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-full shadow-lg shadow-green-200 hover:shadow-green-300 transition-all flex items-center gap-2"
               >
-                <LogIn className="w-4 h-4" />
-                <span className="text-sm">Login</span>
+                Start Learning <ArrowRight className="w-4 h-4" />
               </Link>
-            )}
-          </div>
+            </div>
+          </nav>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className={`mx-auto px-4 mt-6 space-y-6 ${isMobile ? 'max-w-md' : 'max-w-4xl'}`}>
+      {/* Hero Section */}
+      <main className="flex-1">
+        <section className="relative overflow-hidden pt-20 pb-32">
 
-        {/* Dynamic Warning Banner */}
-        {!isOnline && (
-          <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 rounded shadow-sm animate-in fade-in slide-in-from-top-4">
-            <div className="flex items-center gap-2">
-              <WifiOff className="w-5 h-5" />
-              <p className="font-bold">You are currently offline.</p>
-            </div>
-            <p className="text-sm mt-1">You can still read your downloaded books. Progress will sync when you're back online.</p>
+          {/* Background Decor */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+            <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-green-200 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+            <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-emerald-100 rounded-full filter blur-3xl opacity-40"></div>
           </div>
-        )}
 
-        {/* Daily Goal Card */}
-        <section className={`rounded-2xl p-6 text-white shadow-lg bg-gradient-to-br ${isOnline ? 'from-green-500 to-emerald-600' : 'from-stone-500 to-stone-600 grayscale-[0.2]'}`}>
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-lg font-semibold mb-1">Daily Goal</h2>
-              <p className="opacity-90 text-sm mb-4">Read for 30 minutes today</p>
-            </div>
-            {!isMobile && (
-              <div className="bg-white/20 p-2 rounded-lg">
-                <BookOpen className="w-8 h-8 opacity-80" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+
+            {/* Hero Content */}
+            <div className="space-y-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white text-green-700 rounded-full text-xs font-bold uppercase tracking-wide border border-green-200 shadow-sm">
+                <Sparkles className="w-3 h-3" />
+                Empowering Education
               </div>
-            )}
-          </div>
+              <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 leading-tight">
+                Learning that <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-600 filter drop-shadow-sm">comes alive.</span>
+              </h1>
+              <p className="text-lg md:text-xl text-slate-600 max-w-lg leading-relaxed">
+                Access thousands of books, interactive lessons, and offline resources designed for students aged 4-17. Education for everyone, everywhere. Delivered by ThinkSharp.
+              </p>
 
-          <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-            <div className="bg-white h-2 rounded-full w-[40%]"></div>
-          </div>
-          <p className="text-xs text-right opacity-80">12 / 30 mins</p>
-        </section>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/login"
+                  className="px-8 py-4 bg-slate-900 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
+                >
+                  <UserCircle className="w-5 h-5" />
+                  Student Login
+                </Link>
+                <button className="px-8 py-4 bg-white text-green-700 font-bold rounded-xl border-2 border-green-100 hover:border-green-300 hover:bg-green-50 transition-all flex items-center justify-center gap-3 shadow-sm">
+                  <BookHeart className="w-5 h-5" />
+                  Explore Library
+                </button>
+              </div>
 
-        {/* Library Grid */}
-        <section>
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-gray-800">Your Library</h2>
-              <div className="flex gap-2">
-                <Dropdown
-                  label="Level"
-                  options={levels}
-                  value={selectedLevel}
-                  onChange={setSelectedLevel}
-                  className="hidden md:block"
-                />
-                <Dropdown
-                  label="Subject"
-                  options={subjects}
-                  value={selectedSubject}
-                  onChange={setSelectedSubject}
-                  className="hidden md:block"
-                />
+              <div className="flex items-center gap-8 pt-8 opacity-90">
+                <div>
+                  <p className="text-3xl font-bold text-slate-900">10k+</p>
+                  <p className="text-sm text-slate-500 font-medium">Students</p>
+                </div>
+                <div className="w-px h-10 bg-green-200"></div>
+                <div>
+                  <p className="text-3xl font-bold text-slate-900">50+</p>
+                  <p className="text-sm text-slate-500 font-medium">Partner Schools</p>
+                </div>
               </div>
             </div>
 
-            {/* Search Bar */}
+            {/* Hero Visual */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search for books by title..."
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-100 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <div className="absolute inset-0 bg-gradient-to-tr from-green-400 to-emerald-300 rounded-3xl transform rotate-3 scale-105 opacity-30 blur-2xl"></div>
+              <div className="relative bg-white/60 backdrop-blur-lg p-2 rounded-3xl shadow-2xl border border-white/50 transform transition-transform hover:scale-[1.01] duration-500">
+                <div className="bg-gradient-to-br from-white to-green-50 rounded-2xl overflow-hidden aspect-[4/3] flex items-center justify-center relative border border-green-50">
+                  {/* Abstract Educational Illustration Placeholder */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                    <GraduationCap className="w-96 h-96 text-green-900" />
+                  </div>
+
+                  <div className="z-10 text-center space-y-4 p-8">
+                    <div className="w-24 h-24 bg-white rounded-2xl shadow-xl shadow-green-100 mx-auto flex items-center justify-center animate-bounce border border-green-50">
+                      <BookOpen className="w-12 h-12 text-green-500" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-800">Your Digital Classroom</h3>
+                    <p className="text-slate-500 font-medium">Interactive. Offline-ready. Fun.</p>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </div>
-
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
-            {paginatedBooks?.map((book) => (
-              <BookCard
-                key={book.id}
-                id={book.id!}
-                title={book.title}
-                grade={book.grade}
-                pages={book.pages}
-                pdfUrl={book.pdfUrl}
-                coverUrl={book.coverUrl}
-              />
-
-            ))}
-          </div>
-
-          {/* Load More Button */}
-          {hasMore && (
-            <div className="mt-8 text-center">
-              <button
-                onClick={() => setVisibleCount(prev => prev + 12)}
-                className="bg-white text-gray-700 px-6 py-2 rounded-full shadow-sm border border-gray-100 font-medium hover:bg-gray-50 active:scale-95 transition-all"
-              >
-                Load More Books
-              </button>
-            </div>
-          )}
         </section>
+      </main>
 
-      </div>
+      {/* Footer */}
+      <footer className="bg-white py-12 border-t border-green-100 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-sm text-slate-400 font-medium">
+            &copy; 2024 ThinkSharp Foundation. All rights reserved.
+          </p>
 
-      <SyncStatus />
-
-      {/* Bottom Nav */}
-      <nav className={`fixed bottom-0 left-0 right-0 border-t py-3 px-6 transition-colors duration-300 ${isOnline ? 'bg-white border-gray-200' : 'bg-stone-100 border-stone-200'}`}>
-        <div className={`mx-auto flex justify-around ${isMobile ? 'max-w-md' : 'max-w-4xl'}`}>
-          <button className={`flex flex-col items-center ${isOnline ? 'text-green-600' : 'text-stone-600'}`}>
-            <BookOpen className="w-6 h-6" />
-            <span className="text-[10px] mt-1 font-medium">Library</span>
-          </button>
-          <Link href="/leaderboard" className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors">
-            <Trophy className="w-6 h-6" />
-            <span className="text-[10px] mt-1 font-medium">Rank</span>
-          </Link>
-          <Link href="/admin" className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors">
-            <LayoutDashboard className="w-6 h-6" />
-            <span className="text-[10px] mt-1 font-medium">Admin</span>
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link href="/admin" className="text-xs text-slate-400 hover:text-green-600 transition-colors flex items-center gap-1 group font-medium">
+              <LogIn className="w-3 h-3 group-hover:text-green-600" />
+              Admin Access
+            </Link>
+          </div>
         </div>
-      </nav>
-    </main>
+      </footer>
+
+    </div>
   );
 }
