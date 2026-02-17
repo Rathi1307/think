@@ -84,30 +84,57 @@ export default function ReadPage() {
         console.log(`Saving session: ${totalDuration}s, Points: ${totalSessionPoints}`);
 
         try {
-            // 1. Save Reading Session
+            // Get local user info first
+            const localUser = await db.users.get('local-user');
+            if (!localUser) {
+                console.error("No local user found, cannot save progress properly.");
+                return;
+            }
+
+            const endTime = Date.now();
+            const userId = localUser.id; // This might be a remote ID or local ID
+
+            // 1. Save Local Reading Session
             await db.readings.add({
                 bookId: bookId,
+                userId: userId,
                 startTime: startTimeRef.current,
-                endTime: Date.now(),
+                endTime: endTime,
                 synced: 0
             });
 
-            // 2. Update User Points
-            const users = await db.users.toArray();
-            if (users.length > 0) {
-                const user = users[0];
-                await db.users.update(user.id, {
-                    totalPoints: (user.totalPoints || 0) + totalSessionPoints
+            // 2. Update Local User Points
+            const newTotalPoints = (localUser.totalPoints || 0) + totalSessionPoints;
+            await db.users.update('local-user', {
+                totalPoints: newTotalPoints
+            });
+            // Also update the original record if it exists separately
+            if (userId !== 'local-user') {
+                await db.users.update(userId, {
+                    totalPoints: newTotalPoints
                 });
             }
 
-            // 3. Add to Sync Queue
+            // 3. Add to Sync Queue (for Cloud)
+
+            // Task A: Sync the Reading Log
             await db.syncQueue.add({
                 type: 'READ_LOG',
                 payload: {
-                    bookId,
-                    duration: totalDuration,
-                    pointsEarned: totalSessionPoints
+                    userId: userId, // Important: Supabase needs the real ID
+                    bookId: bookId,
+                    startTime: startTimeRef.current,
+                    endTime: endTime
+                },
+                createdAt: Date.now()
+            });
+
+            // Task B: Sync the Points Update
+            await db.syncQueue.add({
+                type: 'UPDATE_POINTS',
+                payload: {
+                    userId: userId,
+                    totalPoints: newTotalPoints
                 },
                 createdAt: Date.now()
             });
