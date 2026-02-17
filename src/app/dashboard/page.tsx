@@ -172,6 +172,7 @@ export default function Dashboard() {
                                     id={book.id!}
                                     title={book.title}
                                     grade={book.grade}
+                                    level={book.level}
                                     pages={book.pages}
                                     pdfUrl={book.pdfUrl}
                                     coverUrl={book.coverUrl}
@@ -181,27 +182,27 @@ export default function Dashboard() {
                     </section>
                 )}
 
-                {/* Library Grid */}
-                <section>
+                {/* Library Grid grouped by Subject */}
+                <section className="space-y-12">
                     <div className="flex flex-col gap-4 mb-6">
                         <div className="flex justify-between items-center flex-wrap gap-4">
                             <div className="flex items-center gap-2">
                                 <Sparkles className="w-5 h-5 text-yellow-500" />
-                                <h2 className="text-lg font-bold text-gray-800">
-                                    {user?.age ? `Recommended for Level ${selectedLevel}` : "Your Library"}
+                                <h2 className="text-xl font-bold text-gray-800">
+                                    {selectedLevel ? `Level ${selectedLevel} Library` : "Explore Your Library"}
                                 </h2>
                             </div>
 
                             <div className="flex gap-2">
                                 <Dropdown
-                                    label="Level"
+                                    label="All Levels"
                                     options={levels}
                                     value={selectedLevel}
                                     onChange={setSelectedLevel}
                                     className=""
                                 />
                                 <Dropdown
-                                    label="Subject"
+                                    label="All Subjects"
                                     options={subjects}
                                     value={selectedSubject}
                                     onChange={setSelectedSubject}
@@ -212,39 +213,55 @@ export default function Dashboard() {
 
                         {/* Search Bar */}
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
-                                placeholder="Search for books by title..."
-                                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-100 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all text-sm"
+                                placeholder="Search by title, level, or subject..."
+                                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all text-sm"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
-                        {paginatedBooks?.map((book) => (
-                            <BookCard
-                                key={book.id}
-                                id={book.id!}
-                                title={book.title}
-                                grade={book.grade}
-                                pages={book.pages}
-                                pdfUrl={book.pdfUrl}
-                                coverUrl={book.coverUrl}
-                            />
-                        ))}
-                    </div>
+                    {Array.from(new Set(filteredBooks?.map(b => b.subject) || [])).sort().map(subject => (
+                        <div key={subject} className="space-y-4">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                    <div className="w-1.5 h-6 bg-green-500 rounded-full" />
+                                    {subject}
+                                </h3>
+                                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                    {filteredBooks?.filter(b => b.subject === subject).length} Books
+                                </span>
+                            </div>
 
-                    {/* Load More Button */}
-                    {hasMore && (
-                        <div className="mt-8 text-center">
+                            <div className={`grid gap-6 ${isMobile ? 'grid-cols-2' : 'grid-cols-3 lg:grid-cols-4'}`}>
+                                {filteredBooks?.filter(b => b.subject === subject).map((book) => (
+                                    <BookCard
+                                        key={book.id}
+                                        id={book.id!}
+                                        title={book.title}
+                                        grade={book.grade}
+                                        level={book.level}
+                                        pages={book.pages}
+                                        pdfUrl={book.pdfUrl}
+                                        coverUrl={book.coverUrl}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+
+                    {filteredBooks?.length === 0 && (
+                        <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                            <Search className="w-16 h-16 text-gray-100 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-400">No books match your current selection</h3>
                             <button
-                                onClick={() => setVisibleCount(prev => prev + 12)}
-                                className="bg-white text-gray-700 px-6 py-2 rounded-full shadow-sm border border-gray-100 font-medium hover:bg-gray-50 active:scale-95 transition-all"
+                                onClick={() => { setSelectedLevel(""); setSelectedSubject(""); setSearchQuery(""); }}
+                                className="mt-4 px-6 py-2 bg-green-50 text-green-600 rounded-full font-bold hover:bg-green-100 transition-colors"
                             >
-                                Load More Books
+                                Reset Filters
                             </button>
                         </div>
                     )}

@@ -8,12 +8,13 @@ interface BookCardProps {
     id: number;
     title: string;
     grade: string;
+    level: string;
     pages: number;
     pdfUrl: string;
     coverUrl?: string;
 }
 
-export function BookCard({ id, title, grade, pages, pdfUrl, coverUrl }: BookCardProps) {
+export function BookCard({ id, title, grade, level, pages, pdfUrl, coverUrl }: BookCardProps) {
 
     const [downloading, setDownloading] = useState(false);
     const [isOfflineReady, setIsOfflineReady] = useState(false);
@@ -73,6 +74,11 @@ export function BookCard({ id, title, grade, pages, pdfUrl, coverUrl }: BookCard
                         </div>
                     )}
 
+
+                    {/* Level Badge */}
+                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-full text-[10px] font-bold z-10 border border-white/10 uppercase tracking-tighter">
+                        Level {level}
+                    </div>
 
                     {/* Download Overlay Button */}
                     <button

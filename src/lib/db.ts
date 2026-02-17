@@ -13,6 +13,7 @@ interface User {
 interface ReadingSession {
     id?: number; // Local Auto-increment
     bookId: string;
+    userId: string;
     startTime: number;
     endTime?: number;
     synced: 0 | 1; // 0 = false, 1 = true
@@ -20,10 +21,12 @@ interface ReadingSession {
 
 interface Book {
     id?: number;
+    fileId?: string; // Original Google Drive File ID
     title: string;
     grade: string;
     pages: number;
     pdfUrl: string;
+    pdfBlob?: Blob; // Added for true offline storage
     level: string;
     subject: string;
     language: string;
@@ -45,9 +48,9 @@ const db = new Dexie('AdaptivePlatformDB') as Dexie & {
 };
 
 // Schema definition
-db.version(5).stores({
+db.version(7).stores({
     users: 'id, name, totalPoints',
-    readings: '++id, bookId, synced, startTime',
+    readings: '++id, bookId, userId, synced, startTime',
     syncQueue: '++id, type, createdAt',
     books: '++id, title, grade, level, subject, language'
 });

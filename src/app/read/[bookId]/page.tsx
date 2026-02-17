@@ -8,19 +8,19 @@ import { useParams } from 'next/navigation';
 import { db } from '@/lib/db';
 
 
+import { useLiveQuery } from "dexie-react-hooks";
+
 export default function ReadPage() {
     const params = useParams();
-    const bookId = typeof params.bookId === 'string' ? params.bookId : '1';
+    const bookIdString = typeof params.bookId === 'string' ? params.bookId : '1';
+    const bookIdNum = parseInt(bookIdString);
 
-    // Mock Database for Books
-    const BOOKS: Record<string, string> = {
-        '1': '/sample.pdf',
-        '2': '/science-book.pdf',
-        '3': '/sample.pdf',
-        '4': '/sample.pdf'
-    };
+    const book = useLiveQuery(
+        () => db.books.get(bookIdNum),
+        [bookIdNum]
+    );
 
-    const pdfUrl = BOOKS[bookId] || '/sample.pdf';
+    const pdfUrl = book?.pdfUrl || '/sample.pdf';
 
     // State for tracking per-page time
     const [currentPage, setCurrentPage] = useState(1); // Track current page
@@ -48,7 +48,7 @@ export default function ReadPage() {
             // We need to ensure we capture the final page's points here or in saveProgress
             saveProgress();
         };
-    }, []);
+    }, [bookIdString]); // Dependencies updated
 
     // Handle Page Change
     const handlePageChange = (newPage: number) => {
@@ -81,7 +81,7 @@ export default function ReadPage() {
 
         if (totalSessionPoints === 0 && totalDuration < 5) return;
 
-        console.log(`Saving session: ${totalDuration}s, Points: ${totalSessionPoints}`);
+        console.log(`Saving session for book ${bookIdString}: ${totalDuration}s, Points: ${totalSessionPoints}`);
 
         try {
             // Get local user info first
@@ -92,11 +92,11 @@ export default function ReadPage() {
             }
 
             const endTime = Date.now();
-            const userId = localUser.id; // This might be a remote ID or local ID
+            const userId = localUser.id;
 
             // 1. Save Local Reading Session
             await db.readings.add({
-                bookId: bookId,
+                bookId: bookIdString,
                 userId: userId,
                 startTime: startTimeRef.current,
                 endTime: endTime,
@@ -122,7 +122,7 @@ export default function ReadPage() {
                 type: 'READ_LOG',
                 payload: {
                     userId: userId, // Important: Supabase needs the real ID
-                    bookId: bookId,
+                    bookId: bookIdString,
                     startTime: startTimeRef.current,
                     endTime: endTime
                 },
@@ -152,7 +152,7 @@ export default function ReadPage() {
                 <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
                     <ArrowLeft className="w-5 h-5 text-gray-700" />
                 </Link>
-                <h1 className="font-semibold text-gray-800 text-sm">Environmental Science</h1>
+                <h1 className="font-semibold text-gray-800 text-sm">{book?.title || "Reading..."}</h1>
                 <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
                     <Clock className="w-3 h-3" />
                     <span>{Math.floor(displaySeconds / 60)}:{(displaySeconds % 60).toString().padStart(2, '0')}</span>
@@ -163,6 +163,8 @@ export default function ReadPage() {
             <main className="flex-1 p-4 flex justify-center">
                 <PdfReader
                     url={pdfUrl}
+                    book={book}
+                    bookIdNum={bookIdNum}
                     onPageChange={handlePageChange}
                 />
             </main>

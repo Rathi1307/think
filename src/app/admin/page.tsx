@@ -5,9 +5,26 @@ import { Book, db, User } from "@/lib/db";
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Trash2, Plus, BookOpen, GraduationCap, MapPin, Search, Cloud, Download, Loader2 } from "lucide-react";
+import {
+    LayoutDashboard,
+    BookOpen,
+    Users,
+    GraduationCap,
+    MapPin,
+    Download,
+    History,
+    Trophy,
+    LogOut,
+    Search,
+    ChevronRight,
+    Loader2,
+    Trash2,
+    Plus,
+    Cloud,
+    FolderTree
+} from "lucide-react";
 import { Dropdown } from "@/components/dropdown";
-import { fetchDriveFolder, getDirectDownloadUrl, DriveFile } from "@/lib/google-drive";
+import { fetchDriveContents, getDirectDownloadUrl, DriveItem } from "@/lib/google-drive";
 
 
 export default function AdminDashboard() {
@@ -25,8 +42,9 @@ export default function AdminDashboard() {
 
     // Google Drive Import State
     const [folderId, setFolderId] = useState("");
-    const [scanResults, setScanResults] = useState<DriveFile[]>([]);
+    const [scanResults, setScanResults] = useState<Book[]>([]);
     const [scanning, setScanning] = useState(false);
+    const [scanStatus, setScanStatus] = useState("");
     const [importing, setImporting] = useState(false);
 
 
@@ -109,52 +127,156 @@ export default function AdminDashboard() {
     const handleScan = async () => {
         if (!folderId) return;
         setScanning(true);
+        setScanResults([]);
         try {
-            const id = folderId.includes('id=') ? folderId.split('id=')[1] : folderId.split('/').pop() || folderId;
-            const files = await fetchDriveFolder(id);
-            setScanResults(files);
+            // Robust folder ID extraction
+            let rootId = folderId.trim();
+            if (rootId.includes('id=')) {
+                rootId = rootId.split('id=')[1].split('&')[0];
+            } else if (rootId.includes('/folders/')) {
+                rootId = rootId.split('/folders/')[1].split('?')[0].split('/')[0];
+            } else if (rootId.includes('/file/d/')) {
+                rootId = rootId.split('/file/d/')[1].split('/')[0];
+            } else if (rootId.includes('/d/')) {
+                rootId = rootId.split('/d/')[1].split('/')[0];
+            }
+
+            console.log(`[DriveScan] Extracted Root ID: "${rootId}" from input: "${folderId}"`);
+            setScanStatus(`Processing Root ID: ${rootId}...`);
+
+            setScanStatus("Initializing scan...");
+            const discoveredBooks: Book[] = [];
+
+            // recursive scan helper
+            const crawl = async (currentFolderId: string, currentLevel?: string, currentSubject?: string, currentLanguage?: string) => {
+                const items = await fetchDriveContents(currentFolderId);
+
+                for (const item of items) {
+                    let nextLevel = currentLevel;
+                    let nextSubject = currentSubject;
+                    let nextLanguage = currentLanguage;
+
+                    // Handle Folders or Shortcuts to Folders
+                    const isFolder = item.mimeType === 'application/vnd.google-apps.folder';
+                    const isShortcut = item.mimeType === 'application/vnd.google-apps.shortcut';
+
+                    if (isFolder || isShortcut) {
+                        const targetId = isShortcut ? (item as any).shortcutDetails?.targetId : item.id;
+                        if (!targetId) continue;
+
+                        const name = item.name.toLowerCase();
+                        setScanStatus(`Scanning: ${item.name}...`);
+                        console.log(`[DriveScan] Found ${isShortcut ? 'shortcut to ' : ''}folder: ${item.name} (${targetId})`);
+
+                        // Detect Level
+                        if (name.includes('level') || name.includes('grade') || name.includes('lv')) {
+                            const match = name.match(/(?:level|lv|grade)\s*(\d+)/i);
+                            if (match) nextLevel = match[1];
+                        }
+
+                        // Detect Language
+                        if (['english', 'hindi', 'marathi', 'gujarati', 'tamil', 'telugu', 'kannada', 'bengali'].some(l => name.includes(l))) {
+                            nextLanguage = item.name;
+                        }
+
+                        // Detect Subject
+                        if (['science', 'mathematics', 'math', 'history', 'geography', 'civics', 'english', 'hindi', 'marathi', 'evs', 'social'].some(s => name.includes(s)) && !name.includes('level') && !name.includes('grade')) {
+                            nextSubject = item.name;
+                        } else if (!nextSubject && !nextLevel && !nextLanguage) {
+                            // Fallback: if nothing specific detected, assume it might be a subject
+                            nextSubject = item.name;
+                        }
+
+                        console.log(`[DriveScan] Descending: ${item.name} | L:${nextLevel} S:${nextSubject} Lang:${nextLanguage}`);
+                        await crawl(targetId, nextLevel, nextSubject, nextLanguage);
+                    } else {
+                        // Handle PDFs or Shortcuts to PDFs
+                        const isPDF = item.mimeType === 'application/pdf';
+                        const isShortcutToPDF = isShortcut && (item as any).shortcutDetails?.targetMimeType === 'application/pdf';
+
+                        if (isPDF || isShortcutToPDF) {
+                            const pdfId = isShortcutToPDF ? (item as any).shortcutDetails?.targetId : item.id;
+                            if (!pdfId) continue;
+
+                            console.log(`[DriveScan] Found PDF: ${item.name} | L:${currentLevel} S:${currentSubject} Lang:${currentLanguage}`);
+                            discoveredBooks.push({
+                                title: item.name.replace(/\.pdf$/i, ""),
+                                fileId: pdfId,
+                                grade: currentLevel ? `Grade ${currentLevel}` : (newBook.grade || "Grade 10"),
+                                pages: 10,
+                                pdfUrl: getDirectDownloadUrl(pdfId),
+                                level: currentLevel || newBook.level || "1",
+                                subject: currentSubject || nextSubject || newBook.subject || "General",
+                                language: currentLanguage || newBook.language || "English"
+                            });
+                        }
+                    }
+                }
+            };
+
+            await crawl(rootId);
+            setScanResults(discoveredBooks);
+            if (discoveredBooks.length === 0) alert("No PDFs found in the specified folder structure.");
         } catch (error: any) {
-            alert(error.message);
+            console.error("[DriveScan] Error:", error);
+            if (error.message.includes("API keys are not supported")) {
+                alert("ERROR: The Google Drive folder is likely PRIVATE. \n\nPlease share the folder as 'Anyone with the link can view' and try again.");
+            } else if (error.message.includes("API key not valid")) {
+                alert("ERROR: The API Key in .env.local is invalid. \n\nPlease ensure it starts with 'AIza...' and you have restarted the server.");
+            } else {
+                alert(error.message);
+            }
         } finally {
             setScanning(false);
+            setScanStatus("");
         }
     };
 
     const handleImportAll = async () => {
         if (scanResults.length === 0) return;
         setImporting(true);
+        let importedCount = 0;
         try {
-            const pdfs = scanResults.filter(f => f.mimeType.includes('pdf'));
-            const images = scanResults.filter(f => f.mimeType.includes('image'));
+            for (const book of scanResults) {
+                setScanStatus(`Importing Content: ${book.title}...`);
 
-            const formattedBooks: Book[] = pdfs.map(pdfFile => {
-                const baseName = pdfFile.name.replace(/\.pdf$/i, "").trim().toLowerCase();
-                // Find matching image
-                const matchingImage = images.find(img =>
-                    img.name.split('.')[0].trim().toLowerCase() === baseName
-                );
+                let pdfBlob: Blob | undefined;
+                try {
+                    // Use the proxy API to avoid CORS issues
+                    const proxyUrl = `/api/proxy-pdf?fileId=${book.fileId}`;
+                    const response = await fetch(proxyUrl);
+                    if (response.ok) {
+                        pdfBlob = await response.blob();
+                    }
+                } catch (e) {
+                    console.error(`Failed to fetch PDF for ${book.title} via proxy`, e);
+                }
 
-                return {
-                    title: pdfFile.name.replace(/\.pdf$/i, ""),
-                    grade: newBook.grade || "Grade 10",
-                    pages: 10,
-                    pdfUrl: getDirectDownloadUrl(pdfFile.id),
-                    level: newBook.level || "1",
-                    subject: newBook.subject || "Science",
-                    language: newBook.language || "English",
-                    coverUrl: matchingImage ? getDirectDownloadUrl(matchingImage.id) : undefined
-                };
-            });
-
-            await addBooks(formattedBooks);
+                await db.books.add({
+                    ...book,
+                    pdfBlob: pdfBlob
+                });
+                importedCount++;
+            }
 
             setScanResults([]);
             setFolderId("");
-            alert(`Successfully imported ${formattedBooks.length} books!`);
+            alert(`Successfully imported ${importedCount} books with full content!`);
         } catch (error: any) {
             alert("Import failed: " + error.message);
         } finally {
             setImporting(false);
+            setScanStatus("");
+        }
+    };
+
+    const handleClearLibrary = async () => {
+        if (!confirm("Are you sure you want to delete ALL books? This will remove your imported library as well as the sample books.")) return;
+        try {
+            await db.books.clear();
+            alert("Library cleared successfully!");
+        } catch (error: any) {
+            alert("Failed to clear library: " + error.message);
         }
     };
 
@@ -206,7 +328,7 @@ export default function AdminDashboard() {
                 {/* ... charts ... */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h3 className="font-semibold mb-6">Books Read by School</h3>
-                    <div className="h-64">
+                    <div className="h-[256px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={schoolData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -221,7 +343,7 @@ export default function AdminDashboard() {
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h3 className="font-semibold mb-6">Active Students by District</h3>
-                    <div className="h-64">
+                    <div className="h-[256px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={districtData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -285,7 +407,6 @@ export default function AdminDashboard() {
                                     <th className="p-4">Age</th>
                                     <th className="p-4">School</th>
                                     <th className="p-4">City</th>
-                                    <th className="p-4">Mobile</th>
                                     <th className="p-4 text-right">Points</th>
                                 </tr>
                             </thead>
@@ -296,7 +417,6 @@ export default function AdminDashboard() {
                                         <td className="p-4 text-gray-500">{student.age}</td>
                                         <td className="p-4 text-gray-500">{student.school}</td>
                                         <td className="p-4 text-gray-500">{student.city}</td>
-                                        <td className="p-4 text-gray-500">{student.mobile || '-'}</td>
                                         <td className="p-4 text-right font-bold text-green-600 px-2 py-1 rounded bg-green-50 inline-block mt-2">{student.totalPoints}</td>
                                     </tr>
                                 ))}
@@ -442,23 +562,42 @@ export default function AdminDashboard() {
                     <p className="text-xs text-gray-400">Import PDFs and matching cover images automatically</p>
                 </div>
                 <div className="p-6 space-y-6">
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="Paste Google Drive Folder ID or Link"
-                            className="flex-1 p-2 border rounded"
-                            value={folderId}
-                            onChange={(e) => setFolderId(e.target.value)}
-                        />
-                        <button
-                            onClick={handleScan}
-                            disabled={scanning || !folderId}
-                            className="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
-                        >
-                            {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                            Scan Folder
-                        </button>
+                    <div className="space-y-4">
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <Cloud className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <input
+                                    type="text"
+                                    placeholder="Paste Google Drive Folder ID or Link..."
+                                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm"
+                                    value={folderId}
+                                    onChange={(e) => setFolderId(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={handleScan}
+                                disabled={scanning}
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2 text-sm whitespace-nowrap"
+                            >
+                                {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                                Scan Folder
+                            </button>
+                        </div>
+
+                        {!process.env.NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 flex items-center gap-2">
+                                <span className="font-bold">Missing API Key:</span>
+                                Please add NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY to your .env.local file and restart the server.
+                            </div>
+                        )}
                     </div>
+
+                    {scanning && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 flex items-center gap-2 animate-pulse">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>{scanStatus}</span>
+                        </div>
+                    )}
 
                     {scanResults.length > 0 && (
                         <div className="space-y-4">
@@ -471,11 +610,11 @@ export default function AdminDashboard() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {scanResults.map((file) => (
-                                            <tr key={file.id}>
-                                                <td className="p-2">{file.name}</td>
+                                        {scanResults.map((book, idx) => (
+                                            <tr key={idx}>
+                                                <td className="p-2">{book.title}</td>
                                                 <td className="p-2 text-right text-gray-400">
-                                                    {file.mimeType.includes('pdf') ? 'PDF' : 'Cover Image'}
+                                                    {book.subject} / L{book.level}
                                                 </td>
                                             </tr>
                                         ))}
@@ -485,8 +624,8 @@ export default function AdminDashboard() {
 
                             <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
                                 <div className="text-sm text-blue-700">
-                                    Found <strong>{scanResults.filter(f => f.mimeType.includes('pdf')).length}</strong> PDFs
-                                    and <strong>{scanResults.filter(f => f.mimeType.includes('image')).length}</strong> images.
+                                    Found <strong>{scanResults.length}</strong> books across hierarchies.
+                                    Metadata (Level/Subject) will be extracted from folder names where possible.
                                 </div>
                                 <button
                                     onClick={handleImportAll}
@@ -499,6 +638,18 @@ export default function AdminDashboard() {
                             </div>
                         </div>
                     )}
+                </div>
+
+                {/* Danger Zone */}
+                <div className="mt-8 pt-6 border-t border-red-100">
+                    <h4 className="text-xs font-bold text-red-500 uppercase tracking-wider mb-3">Danger Zone</h4>
+                    <button
+                        onClick={handleClearLibrary}
+                        className="text-xs flex items-center gap-2 bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition-colors border border-red-100"
+                    >
+                        <Trash2 className="w-3 h-3" />
+                        Clear All Books from Library
+                    </button>
                 </div>
             </section>
 
