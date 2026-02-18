@@ -72,11 +72,14 @@ export function PdfReader({ url, book, bookIdNum, onPageChange }: PdfReaderProps
         setError(err.message);
     }
 
+    // Notify parent of page change safely
+    useEffect(() => {
+        onPageChange?.(pageNumber);
+    }, [pageNumber, onPageChange]);
+
     function changePage(offset: number) {
         setPageNumber(prev => {
-            const newPage = Math.min(Math.max(prev + offset, 1), numPages);
-            onPageChange?.(newPage);
-            return newPage;
+            return Math.min(Math.max(prev + offset, 1), numPages);
         });
     }
 
