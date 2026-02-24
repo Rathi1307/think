@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Dropdown } from "@/components/dropdown";
 
 import { SyncStatus } from "@/components/sync-status";
-import { BookOpen, Trophy, Flame, Wifi, WifiOff, Laptop, Smartphone, LayoutDashboard, LogIn, LogOut, Search, Clock, Sparkles } from "lucide-react";
+import { BookOpen, Trophy, Flame, Wifi, WifiOff, Laptop, Smartphone, LogIn, LogOut, Search, Clock, Sparkles } from "lucide-react";
 import Link from 'next/link';
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/lib/supabase";
@@ -99,27 +99,6 @@ export default function Dashboard() {
                             <span>{points} pts</span>
                         </div>
 
-                        {/* Auth Button */}
-                        {user?.id !== 'local-user' ? (
-                            <button
-                                onClick={async () => {
-                                    await supabase.auth.signOut();
-                                    window.location.reload();
-                                }}
-                                className="flex items-center gap-1 text-gray-600 hover:text-red-600 transition-colors bg-gray-50 hover:bg-red-50 px-2 py-1 rounded-lg"
-                                title="Sign Out"
-                            >
-                                <LogOut className="w-4 h-4" />
-                            </button>
-                        ) : (
-                            <Link
-                                href="/login"
-                                className="flex items-center gap-1 text-green-700 font-bold bg-green-100 hover:bg-green-200 px-3 py-1 rounded-lg transition-colors"
-                            >
-                                <LogIn className="w-4 h-4" />
-                                <span className="text-sm">Login</span>
-                            </Link>
-                        )}
                     </div>
                 </div>
             </header>
@@ -262,10 +241,6 @@ export default function Dashboard() {
                     <Link href="/leaderboard" className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors">
                         <Trophy className="w-6 h-6" />
                         <span className="text-[10px] mt-1 font-medium">Rank</span>
-                    </Link>
-                    <Link href="/admin" className="flex flex-col items-center text-gray-400 hover:text-green-600 transition-colors">
-                        <LayoutDashboard className="w-6 h-6" />
-                        <span className="text-[10px] mt-1 font-medium">Admin</span>
                     </Link>
                 </div>
             </nav>

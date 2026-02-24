@@ -5,9 +5,10 @@ import { Book, db, User } from "@/lib/db";
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Trash2, Plus, BookOpen, GraduationCap, MapPin, Search, Cloud, Download, Loader2 } from "lucide-react";
+import { Trash2, Plus, BookOpen, GraduationCap, MapPin, Search, Cloud, Download, Loader2, LayoutDashboard } from "lucide-react";
 import { Dropdown } from "@/components/dropdown";
 import { fetchDriveFolder, getDirectDownloadUrl, DriveFile } from "@/lib/google-drive";
+import Link from "next/link";
 
 
 export default function AdminDashboard() {
@@ -181,6 +182,19 @@ export default function AdminDashboard() {
                 <h2 className="text-2xl font-bold text-gray-800">Overview</h2>
                 <p className="text-gray-500">Welcome back, Admin</p>
             </header>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Link href="/admin/analytics" className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group flex items-center justify-between">
+                    <div>
+                        <h3 className="font-semibold text-gray-900 group-hover:text-green-600 transition-colors">Analytics</h3>
+                        <p className="text-sm text-gray-500 mt-1">View reports & insights</p>
+                    </div>
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+                        <LayoutDashboard className="w-6 h-6" />
+                    </div>
+                </Link>
+            </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

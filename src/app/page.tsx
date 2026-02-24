@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BookOpen, UserCircle, LogIn, ArrowRight, Sparkles, BookHeart, GraduationCap } from "lucide-react";
+import { BookOpen, UserCircle, LogIn, LogOut, ArrowRight, Sparkles, BookHeart, GraduationCap, LayoutDashboard } from "lucide-react";
 import { BookCard } from "@/components/book-card";
+import { useUser } from "@/hooks/useUser";
+import { supabase } from "@/lib/supabase";
 
 export default function LandingPage() {
-  // TODO: Implement actual data fetching and responsive logic
+  const { user } = useUser();
   const [visibleCount, setVisibleCount] = useState(12);
   const [paginatedBooks, setPaginatedBooks] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -34,19 +36,46 @@ export default function LandingPage() {
             <Link href="https://www.thinksharpfoundation.org/about-us.php" target="_blank" className="hidden md:block text-sm font-medium text-slate-600 hover:text-green-600 transition-colors">
               About ThinkSharp
             </Link>
+
             <div className="flex items-center gap-2">
-              <Link
-                href="/signup"
-                className="px-4 py-2 text-sm font-bold text-slate-700 hover:bg-green-50 hover:text-green-700 rounded-full transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/login"
-                className="px-5 py-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-full shadow-lg shadow-green-200 hover:shadow-green-300 transition-all flex items-center gap-2"
-              >
-                Start Learning <ArrowRight className="w-4 h-4" />
-              </Link>
+              {user && user.id !== 'local-user' ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="px-4 py-2 text-sm font-bold text-slate-700 hover:bg-green-50 hover:text-green-700 rounded-full transition-colors flex items-center gap-2"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      if (supabase) {
+                        await supabase.auth.signOut();
+                        window.location.reload();
+                      }
+                    }}
+                    className="px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-full transition-colors flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 text-sm font-bold text-slate-700 hover:bg-green-50 hover:text-green-700 rounded-full transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="px-5 py-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-full shadow-lg shadow-green-200 hover:shadow-green-300 transition-all flex items-center gap-2"
+                  >
+                    Start Learning <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         </div>
@@ -80,11 +109,20 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
-                  href="/login"
+                  href={user && user.id !== 'local-user' ? "/dashboard" : "/login"}
                   className="px-8 py-4 bg-slate-900 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
                 >
-                  <UserCircle className="w-5 h-5" />
-                  Student Login
+                  {user && user.id !== 'local-user' ? (
+                    <>
+                      <LayoutDashboard className="w-5 h-5" />
+                      Go to Dashboard
+                    </>
+                  ) : (
+                    <>
+                      <UserCircle className="w-5 h-5" />
+                      Student Login
+                    </>
+                  )}
                 </Link>
                 <button className="px-8 py-4 bg-white text-green-700 font-bold rounded-xl border-2 border-green-100 hover:border-green-300 hover:bg-green-50 transition-all flex items-center justify-center gap-3 shadow-sm">
                   <BookHeart className="w-5 h-5" />

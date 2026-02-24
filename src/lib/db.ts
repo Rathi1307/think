@@ -3,17 +3,22 @@ import Dexie, { type EntityTable } from 'dexie';
 interface User {
     id: string; // Remote ID
     name: string;
-    mobile: string; // Added for local auth
+    mobile: string;
+    verifiedMobile?: string; // Confirmed mobile after OTP
+    isVerified?: boolean;
     age?: number;
     city?: string;
     school?: string;
-    password?: string; // Simple local password for demo
+    schoolId?: string; // ID from schools table
+    password?: string;
     totalPoints: number;
+    lastLogin?: number;
 }
 
 interface ReadingSession {
     id?: number; // Local Auto-increment
     bookId: string;
+    userId: string;
     startTime: number;
     endTime?: number;
     synced: 0 | 1; // 0 = false, 1 = true
@@ -46,8 +51,8 @@ const db = new Dexie('AdaptivePlatformDB') as Dexie & {
 };
 
 // Schema definition
-db.version(6).stores({ // Incremented version to apply changes
-    users: 'id, name, mobile, totalPoints', // Added mobile to index
+db.version(7).stores({ // Incremented version to apply changes
+    users: 'id, name, mobile, isVerified, schoolId, totalPoints',
     readings: '++id, bookId, synced, startTime',
     syncQueue: '++id, type, createdAt',
     books: '++id, title, grade, level, subject, language'
@@ -61,6 +66,7 @@ db.on('populate', async () => {
         mobile: '1234567890',
         password: 'admin',
         totalPoints: 0,
+        isVerified: true,
         school: 'ThinkSharp School',
         city: 'Mumbai',
         age: 12
