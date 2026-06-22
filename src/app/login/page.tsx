@@ -28,10 +28,7 @@ export default function LoginPage() {
     const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState<string>("");
-    const [pendingLogin, setPendingLogin] = useState(false);
     const turnstileRef = useRef<TurnstileInstance>(null);
-
-
 
     // Core login logic — called once we have a valid turnstile token (or offline)
     const doLogin = async (token: string) => {
@@ -116,24 +113,13 @@ export default function LoginPage() {
     // true only when the site key is actually present in the build
     const hasTurnstile = isOnline && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
-    // When Turnstile resolves after a pending submit, proceed automatically
-    useEffect(() => {
-        if (pendingLogin && turnstileToken) {
-            setPendingLogin(false);
-            doLogin(turnstileToken);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pendingLogin, turnstileToken]);
-
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!mobile || !password) return;
 
         if (hasTurnstile && !turnstileToken) {
-            // Turnstile is configured but hasn't resolved yet — trigger it and wait
-            turnstileRef.current?.execute();
-            setPendingLogin(true);
-            setLoading(true);
+            // Widget rendered but challenge not yet complete — ask user to wait
+            alert("Please complete the security check first.");
             return;
         }
         // No Turnstile configured (keys not set) OR token already present — login directly
@@ -260,27 +246,28 @@ export default function LoginPage() {
                                 </div>
 
                                 {isOnline && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
-                                    <div className="flex flex-col items-center mt-2 gap-1">
+                                    <div className="w-full rounded-2xl border-2 border-[#111] bg-[#fff9ee] p-3 flex flex-col items-center gap-2 shadow-[0_4px_0_#111]">
+                                        <p className="text-xs font-black uppercase tracking-wider text-[#555] flex items-center gap-1">
+                                            🔒 Security Check
+                                        </p>
                                         <Turnstile
                                             ref={turnstileRef}
                                             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                                            options={{ execution: "execute", theme: "light" }}
+                                            options={{ execution: "render", appearance: "always", theme: "light", size: "normal" }}
                                             onSuccess={(token) => setTurnstileToken(token)}
                                             onExpire={() => { setTurnstileToken(""); turnstileRef.current?.reset(); }}
                                             onError={() => {
-                                                setPendingLogin(false);
                                                 setLoading(false);
                                                 alert("Security check failed. Please try again.");
                                             }}
                                         />
-                                        {pendingLogin && !turnstileToken && (
-                                            <p className="text-xs text-[#888] font-bold animate-pulse">
-                                                🔒 Running security check…
+                                        {turnstileToken ? (
+                                            <p className="text-xs text-green-600 font-black flex items-center gap-1">
+                                                ✅ Verified — You&apos;re human!
                                             </p>
-                                        )}
-                                        {turnstileToken && (
-                                            <p className="text-xs text-green-600 font-bold">
-                                                ✓ Security check passed
+                                        ) : (
+                                            <p className="text-xs text-[#888] font-bold animate-pulse">
+                                                Verifying you&apos;re human…
                                             </p>
                                         )}
                                     </div>
