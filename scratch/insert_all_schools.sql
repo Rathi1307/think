@@ -428,7 +428,8 @@ VALUES
   ('s-415', 'Jila Parishad Prathmik School Supe No. 1', 'Supe', 'Baramati', 'Pune', 'Maharashtra'),
   ('s-416', 'Jila Parishad Prathmik School Supe No. 2', 'Supe', 'Baramati', 'Pune', 'Maharashtra'),
   ('s-417', 'Jila Parishad Prathmik School Borkarwadi', 'Borkarwadi', 'Baramati', 'Pune', 'Maharashtra'),
-  ('s-418', 'Jila Parishad Prathmik School Zhirkhelwasti', 'Zhirkhelwasti', 'Mulshi', 'Pune', 'Maharashtra')
+  ('s-418', 'Jila Parishad Prathmik School Zhirkhelwasti', 'Zhirkhelwasti', 'Mulshi', 'Pune', 'Maharashtra'),
+  ('s-419', 'Mahatma Jyotibha phule, English Medium School', 'Dalvinagar', 'Haveli', 'Pune', 'Maharashtra')
 ON CONFLICT (id) DO UPDATE SET
   school_name = EXCLUDED.school_name,
   village = EXCLUDED.village,
