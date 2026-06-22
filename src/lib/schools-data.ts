@@ -426,4 +426,5 @@ export const SCHOOLS_DATA: SchoolEntry[] = [
   { id: "s-416", school_name: "Jila Parishad Prathmik School Supe No. 2", village: "Supe", taluka: "Baramati", district: "Pune", state: "Maharashtra" },
   { id: "s-417", school_name: "Jila Parishad Prathmik School Borkarwadi", village: "Borkarwadi", taluka: "Baramati", district: "Pune", state: "Maharashtra" },
   { id: "s-418", school_name: "Jila Parishad Prathmik School Zhirkhelwasti", village: "Zhirkhelwasti", taluka: "Mulshi", district: "Pune", state: "Maharashtra" },
+  { id: "s-419", school_name: "Mahatma Jyotibha phule, English Medium School", village: "Dalvinagar", taluka: "Haveli", district: "Pune", state: "Maharashtra" },
 ];
