@@ -83,8 +83,24 @@ export function AnalyticsFilters({ onFilterChange }: AnalyticsFiltersProps) {
         if (taluka) {
             const talukaSchools = schools.filter(s =>
                 s.district === selectedDistrict && s.taluka === taluka
-            ).sort((a, b) => a.school_name.localeCompare(b.school_name));
-            setFilteredSchools(talukaSchools);
+            );
+
+            const uniqueSchools: School[] = [];
+            const seenNames = new Set<string>();
+
+            talukaSchools.forEach(s => {
+                const normName = (s.school_name || '').toUpperCase().trim();
+                if (!seenNames.has(normName)) {
+                    seenNames.add(normName);
+                    uniqueSchools.push({
+                        ...s,
+                        school_name: normName
+                    });
+                }
+            });
+
+            uniqueSchools.sort((a, b) => a.school_name.localeCompare(b.school_name));
+            setFilteredSchools(uniqueSchools);
         } else {
             setFilteredSchools([]);
         }

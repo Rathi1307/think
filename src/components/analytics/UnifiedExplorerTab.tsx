@@ -506,7 +506,7 @@ export function UnifiedExplorerTab() {
         const availableStates = new Set<string>();
         const availableDistricts = new Set<string>();
         const availableTalukas = new Set<string>();
-        const availableSchools = new Set<{id: string, name: string}>();
+        const availableSchools = new Set<string>();
 
         rawSchools.forEach(s => {
             const st = sanitizeName(s.state);
@@ -519,7 +519,7 @@ export function UnifiedExplorerTab() {
                 if (!selectedDistrict || dist === selectedDistrict) {
                     availableTalukas.add(tal);
                     if (!selectedTaluka || tal === selectedTaluka) {
-                        availableSchools.add({ id: s.id, name: sanitizeName(s.school_name) });
+                        availableSchools.add(sanitizeName(s.school_name).toUpperCase());
                     }
                 }
             }
@@ -529,7 +529,7 @@ export function UnifiedExplorerTab() {
         if (selectedState) filterLabels.push(`State: ${selectedState}`);
         if (selectedDistrict) filterLabels.push(`District: ${selectedDistrict}`);
         if (selectedTaluka) filterLabels.push(`Taluka: ${selectedTaluka}`);
-        if (selectedSchool) filterLabels.push(`School: ${availableSchools.has(selectedSchool as any) ? selectedSchool : "Selected"}`); // Note: school is ID
+        if (selectedSchool) filterLabels.push(`School: ${selectedSchool}`);
 
         // Step 1: Filter raw sessions down to match the drill-down
         const filteredSessions = rawSessions.filter(s => {
@@ -541,12 +541,12 @@ export function UnifiedExplorerTab() {
             const st = sanitizeName(info.state);
             const dist = sanitizeName(info.district);
             const tal = sanitizeName(info.taluka);
-            const schId = u.school_id;
+            const schName = sanitizeName(info.school_name || u.school).toUpperCase();
 
             if (selectedState && st !== selectedState) return false;
             if (selectedDistrict && dist !== selectedDistrict) return false;
             if (selectedTaluka && tal !== selectedTaluka) return false;
-            if (selectedSchool && schId !== selectedSchool) return false;
+            if (selectedSchool && schName !== selectedSchool) return false;
 
             return true;
         });
@@ -573,7 +573,7 @@ export function UnifiedExplorerTab() {
                 studentMap.set(s.user_id, {
                     student_id: s.user_id,
                     student_name: sanitizeName(u.name),
-                    school: schName,
+                    school: schName.toUpperCase(),
                     grade: u.grade || "—",
                     books_read: 0,
                     total_points: u.totalPoints || 0,
@@ -582,11 +582,12 @@ export function UnifiedExplorerTab() {
             if (s.completed) studentMap.get(s.user_id)!.books_read += 1;
 
             // School level
-            if (!schoolAgg.has(schId)) {
-                schoolAgg.set(schId, { school_id: schId, school_name: schName, taluka: tal, district: dist, state: st, books_read: 0, students: new Set() });
+            const schKey = `${st}-${dist}-${tal}-${schName.toUpperCase()}`;
+            if (!schoolAgg.has(schKey)) {
+                schoolAgg.set(schKey, { school_id: schKey, school_name: schName.toUpperCase(), taluka: tal, district: dist, state: st, books_read: 0, students: new Set() });
             }
-            schoolAgg.get(schId)!.students.add(s.user_id);
-            if (s.completed) schoolAgg.get(schId)!.books_read += 1;
+            schoolAgg.get(schKey)!.students.add(s.user_id);
+            if (s.completed) schoolAgg.get(schKey)!.books_read += 1;
 
             // Taluka level
             const talKey = `${st}-${dist}-${tal}`;
@@ -629,17 +630,17 @@ export function UnifiedExplorerTab() {
             const st = sanitizeName(info.state);
             const dist = sanitizeName(info.district);
             const tal = sanitizeName(info.taluka);
-            const schId = u.school_id;
+            const schName = sanitizeName(info.school_name || u.school).toUpperCase();
 
             if (selectedState && st !== selectedState) return false;
             if (selectedDistrict && dist !== selectedDistrict) return false;
             if (selectedTaluka && tal !== selectedTaluka) return false;
-            if (selectedSchool && schId !== selectedSchool) return false;
+            if (selectedSchool && schName !== selectedSchool) return false;
             return true;
         }).map(u => ({
             id: u.id,
             name: sanitizeName(u.name),
-            school: sanitizeName(schoolMap.get(u.school_id)?.school_name || u.school),
+            school: sanitizeName(schoolMap.get(u.school_id)?.school_name || u.school).toUpperCase(),
             grade: u.grade || "—",
             mobile: u.mobile || "—",
             created_at: u.created_at
@@ -664,7 +665,7 @@ export function UnifiedExplorerTab() {
             states: Array.from(availableStates).sort().map(s => ({ value: s, label: s })),
             districts: Array.from(availableDistricts).sort().map(d => ({ value: d, label: d })),
             talukas: Array.from(availableTalukas).sort().map(t => ({ value: t, label: t })),
-            schools: Array.from(availableSchools).sort((a,b) => a.name.localeCompare(b.name)).map(s => ({ value: s.id, label: s.name })),
+            schools: Array.from(availableSchools).sort().map(name => ({ value: name, label: name })),
         };
 
         return { report: rep, filtersStr: filterLabels.length ? filterLabels.join(", ") : "All Regions", options: dropdownOpts };
