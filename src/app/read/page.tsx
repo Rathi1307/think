@@ -447,6 +447,18 @@ function ReadContent() {
         return Math.min(earned, remainingPts);
     };
 
+    // Calculate total minimum reading time for the book
+    const getMinReadTimeForBook = () => {
+        const tp = totalPagesRef.current;
+        if (!tp) return 30; // fallback if pages are unknown
+        let totalMinTime = 0;
+        for (let p = 1; p <= tp; p++) {
+            totalMinTime += getMinReadTimeForPage(p);
+        }
+        // Require at least 40% of the normal reading speed time
+        return Math.max(10, Math.ceil(totalMinTime * 0.4));
+    };
+
     // ─── Save progress ──────────────────────────────────────
     const sessionLoggedRef = useRef(false);
     // Tracks whether the student has spent the required minimum time on 100% of pages
@@ -525,10 +537,10 @@ function ReadContent() {
                 // call (e.g. cleanup firing while handleBack is in flight) can't slip through.
                 sessionLoggedRef.current = true;
                 const fallback: Record<number, string> = { 1: 'Sample Book', 2: 'Science Book', 3: 'Math Book', 4: 'History' };
-                // completed = true when student reached the last page OR earned max points
-                // on all pages (the stricter bookCompletedRef alone was almost never true)
-                const isCompleted = bookCompletedRef.current ||
-                    (totalPagesRef.current > 0 && pg >= totalPagesRef.current);
+                // completed = true when student has met minimum duration AND reached the last page OR earned max points on all pages
+                const minBookTime = getMinReadTimeForBook();
+                const isCompleted = (totalDur >= minBookTime) && (bookCompletedRef.current ||
+                    (totalPagesRef.current > 0 && pg >= totalPagesRef.current));
                 await db.syncQueue.add({
                     type: 'READ_LOG',
                     payload: { userId: userId || 'local-user', bookId: bookIdNum, bookTitle: book?.title || fallback[bookIdNum] || 'Unknown', startTime: startTimeRef.current, endTime: now, duration: totalDur, pagesRead: pg, pointsEarned: totalPts, completed: isCompleted },
@@ -641,6 +653,10 @@ function ReadContent() {
 
     useEffect(() => {
         if (!atLastPage || bookCompletionFiredRef.current) return;
+
+        const minBookTime = getMinReadTimeForBook();
+        if (displaySeconds < minBookTime) return;
+
         bookCompletionFiredRef.current = true;
 
         (async () => {
@@ -654,7 +670,7 @@ function ReadContent() {
             const evolved = await onBookCompleted(localUser.id);
             if (evolved !== null) setEvolvedStage(evolved);
         })();
-    }, [atLastPage]);
+    }, [atLastPage, displaySeconds]);
 
     return (
         <div className="fixed inset-0 w-full h-full flex flex-col overflow-hidden select-none"
@@ -861,6 +877,15 @@ function ReadContent() {
                     </p>
                 </div>
             </main>
+
+            {/* ── Minimum reading time warning banner — shown at last page if time is not met ── */}
+            {atLastPage && displaySeconds < getMinReadTimeForBook() && (
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-5 py-3 bg-[#e63329] border-[#111] rounded-2xl shadow-2xl text-white font-black text-xs uppercase"
+                    style={{ minWidth: 280, border: '3px solid #111' }}>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full flex-shrink-0" />
+                    <span>Read for {getMinReadTimeForBook() - displaySeconds} more seconds to complete book!</span>
+                </div>
+            )}
 
             {/* ── Quiz prompt banner — shown at last page if quiz is ready ── */}
             {atLastPage && questions.length > 0 && !showQuiz && (
